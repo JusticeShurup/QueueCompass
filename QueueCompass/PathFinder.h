@@ -10,7 +10,9 @@ public:
 	~PathFinder();
 
 	void LoadMap(const std::string& filepath);
-	
+	void FindPath();
+	void PrintPath() const;
+	void SavePathToImage() const;
 
 private:
 	struct Node {
@@ -21,6 +23,9 @@ private:
 	};
 	std::vector<std::vector<Node*>> nodes;
 
+	bool mapLoaded;
+	Node* startNode;
+	Node* endNode;
 };
 
 #endif // !_PATH_FINDER_H_

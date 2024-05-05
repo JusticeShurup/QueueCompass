@@ -7,6 +7,9 @@ int main()
 {
 	PathFinder pathFinder;
 	pathFinder.LoadMap("maps/map1.txt");
+	pathFinder.FindPath();
+	//pathFinder.PrintPath();
+	pathFinder.SavePathToImage();
 
 	return 0;
 }

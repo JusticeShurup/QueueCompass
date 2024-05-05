@@ -15,7 +15,7 @@ public:
 
 	void Push(T value)
 	{
-		if (!_head)
+		if (_size == 0)
 		{
 			_head = new QueueElement{ nullptr, value };
 			_size++;
