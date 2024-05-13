@@ -10,11 +10,15 @@ public:
 	~PathFinder();
 
 	void LoadMap(const std::string& filepath);
+	void LoadMapFromImage(const std::string& filepath);
 	void FindPath();
 	void PrintPath() const;
 	void SavePathToImage() const;
+	void SaveToImage() const;
 
 private:
+	void MakeNeighbors();
+
 	struct Node {
 		int x;
 		int y;

@@ -3,6 +3,9 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include "deps/stb_image.h"
+#include "deps/stb_image_write.h"
+
 
 PathFinder::PathFinder()
 {
@@ -40,8 +43,10 @@ void PathFinder::LoadMap(const std::string& filepath)
 		std::string row;
 		file >> row;
 		fileData.push_back(row);
+		std::cout << row << std::endl;
 	}
 	file.close();
+
 
 	for (int i = 0; i < fileData.size(); i++)
 	{
@@ -54,43 +59,58 @@ void PathFinder::LoadMap(const std::string& filepath)
 		nodes.push_back(nodesRow);
 	}
 
-	for (int i = 0; i < nodes.size(); i++)
+	MakeNeighbors();
+
+	mapLoaded = true;
+}
+
+void PathFinder::LoadMapFromImage(const std::string& filepath)
+{
+	int size = nodes.size();
+	for (int i = 0; i < size; i++)
 	{
-		for (int j = 0; j < nodes.size(); j++)
+		for (int j = 0; j < size; j++)
 		{
-			Node* node = nodes[i][j];
-			if (node->type == '#')
-			{
-				continue;
-			}
-
-			if (node->type == 's')
-			{
-				startNode = node;
-			}
-			if (node->type == 'e')
-			{
-				endNode = node;
-			}
-
-			if (i > 0 && nodes[i - 1][j]->type != '#') // up
-			{
-				node->neighbours[0] = nodes[i - 1][j];
-			}
-			if (j < nodes.size() - 1 && nodes[i][j + 1]->type != '#') // right
-			{
-				node->neighbours[1] = nodes[i][j + 1];
-			}
-			if (i < nodes.size() - 1 && nodes[i + 1][j]->type != '#') // down
-			{
-				node->neighbours[2] = nodes[i + 1][j];
-			}
-			if (j > 0 && nodes[i][j - 1]->type != '#') // left
-			{
-				node->neighbours[3] = nodes[i][j - 1];
-			}
+			delete nodes[i][j];
 		}
 	}
+	nodes.clear();
+
+	int width;
+	int height;
+	int channels;
+	unsigned char* pixels = stbi_load(filepath.c_str(), &width, &height, &channels, 0);
+	
+	for (int i = 0; i < height; i++)
+	{
+		std::vector<Node*> nodesRow;
+		for (int j = 0; j < width; j++)
+		{
+			Node* node;
+			if(pixels[(height * i + j) * channels] == 0x80 && pixels[(height * i + j) * channels + 1] == 0x80 && pixels[(height * i + j) * channels + 2] == 0x80)
+			{
+				node = new Node{ j, i, '#', {nullptr,nullptr,nullptr,nullptr}};
+			}
+			else if (pixels[(height * i + j) * channels] == 0xFF && pixels[(height * i + j) * channels + 1] == 0x00 && pixels[(height * i + j) * channels + 2] == 0x00)
+			{
+				node = new Node{ j, i, 's', {nullptr,nullptr,nullptr,nullptr} };
+			}
+			else if (pixels[(height * i + j) * channels] == 0x00 && pixels[(height * i + j) * channels + 1] == 0x00 && pixels[(height * i + j) * channels + 2] == 0xFF)
+			{
+				node = new Node{ j, i, 'e', {nullptr,nullptr,nullptr,nullptr} };
+			}
+			else if (pixels[(height * i + j) * channels] == 0xFF && pixels[(height * i + j) * channels + 1] == 0xFF && pixels[(height * i + j) * channels + 2] == 0x00)
+			{
+				node = new Node{ j, i, 'o', {nullptr,nullptr,nullptr,nullptr} };
+			}
+			nodesRow.push_back(node);
+		}
+		nodes.push_back(nodesRow);
+	}
+
+	MakeNeighbors();
+
+	stbi_image_free(pixels);
 
 	mapLoaded = true;
 }
@@ -137,6 +157,7 @@ void PathFinder::FindPath()
 		temp->type = 'x';
 		temp = path[temp];
 	}
+
 }
 
 void PathFinder::PrintPath() const
@@ -154,7 +175,7 @@ void PathFinder::PrintPath() const
 void PathFinder::SavePathToImage() const
 {
 	std::ofstream file("result.bmp", std::ios::binary | std::ios::out);
-	
+
 	unsigned short bfType = 0x4D42;
 	unsigned int fileSize = 14 + 12 + nodes.size() * nodes.size() * 3;
 	unsigned short bfReserved1 = 0;
@@ -180,55 +201,57 @@ void PathFinder::SavePathToImage() const
 	file.write((char*)&biBitCount, 2);
 
 	std::vector<unsigned char> imageData;
+	/*
 	for (int i = 0; i < nodes.size(); i++)
 	{
 		for (int j = nodes.size() - 1; j >= 0; j--)
 		{
 			Node* node = nodes[i][j];
-			std::cout << node->type;
+			//std::cout << node->type;
 			switch (node->type)
 			{
 				case '#':
 				{
-					imageData.push_back(0x80);
-					imageData.push_back(0x80);
-					imageData.push_back(0x80);
+					pixels[i] = 0x80);
+					pixels[i] = 0x80);
+					pixels[i] = 0x80);
 					break;
 				}
 				case 's':
 				{
-					imageData.push_back(0xFF);
-					imageData.push_back(0x00);
-					imageData.push_back(0x00);
+					pixels[i] = 0xFF);
+					pixels[i] = 0x00);
+					pixels[i] = 0x00);
 					break;
 				}
 				case 'e':
 				{
-					imageData.push_back(0x00);
-					imageData.push_back(0x00);
-					imageData.push_back(0xFF);
+					pixels[i] = 0x00);
+					pixels[i] = 0x00);
+					pixels[i] = 0xFF);
 					break;
 				}
 				case 'x':
 				{
-					imageData.push_back(0x00);
-					imageData.push_back(0xFF);
-					imageData.push_back(0x00);
+					pixels[i] = 0x00);
+					pixels[i] = 0xFF);
+					pixels[i] = 0x00);
 					break;
 				}
 				case 'o':
 				{
-					imageData.push_back(0xFF);
-					imageData.push_back(0xFF);
-					imageData.push_back(0x00);
+					pixels[i] = 0xFF);
+					pixels[i] = 0xFF);
+					pixels[i] = 0x00);
 					break;
 				}
 			default:
 				break;
 			}
 		}
-		std::cout << std::endl;
+		//std::cout << std::endl;
 	}
+	*/
 
 	for (int i = imageData.size() - 1; i > 0; i -= 3)
 	{
@@ -241,4 +264,102 @@ void PathFinder::SavePathToImage() const
 	file.close();
 }
 
+
+void PathFinder::SaveToImage() const 
+{
+	const int width = nodes.size();
+	const int heigth = nodes[0].size();
+	const int pixelsCount = width * heigth;
+
+	unsigned char* pixels = new unsigned char[pixelsCount * 3];
+	for (int i = 0; i < width * heigth; i++)
+	{
+		Node* node = nodes[i / heigth][i % heigth];
+
+		switch (node->type)
+		{
+		case '#':
+		{
+			pixels[i * 3] = 0x80;
+			pixels[i * 3 + 1] = 0x80;
+			pixels[i * 3 + 2] = 0x80;
+			break;
+		}
+		case 's':
+		{
+			pixels[i * 3] = 0xFF;
+			pixels[i * 3 + 1] = 0x00;
+			pixels[i * 3 + 2] = 0x00;
+			break;
+		}
+		case 'e':
+		{
+			pixels[i * 3] = 0x00;
+			pixels[i * 3 + 1] = 0x00;
+			pixels[i * 3 + 2] = 0xFF;
+			break;
+		}
+		case 'x':
+		{
+			pixels[i * 3] = 0x00;
+			pixels[i * 3 + 1] = 0xFF;
+			pixels[i * 3 + 2] = 0x00;
+			break;
+		}
+		case 'o':
+		{
+			pixels[i * 3] = 0xFF;
+			pixels[i * 3 + 1] = 0xFF;
+			pixels[i * 3 + 2] = 0x00;
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	int success = stbi_write_bmp("result.png", width, heigth, 3, pixels);
+	
+}
+
+void PathFinder::MakeNeighbors()
+{
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		for (int j = 0; j < nodes.size(); j++)
+		{
+			Node* node = nodes[i][j];
+			if (node->type == '#')
+			{
+				continue;
+			}
+
+			if (node->type == 's')
+			{
+				startNode = node;
+			}
+			if (node->type == 'e')
+			{
+				endNode = node;
+			}
+
+			if (i > 0 && nodes[i - 1][j]->type != '#') // up
+			{
+				node->neighbours[0] = nodes[i - 1][j];
+			}
+			if (j < nodes.size() - 1 && nodes[i][j + 1]->type != '#') // right
+			{
+				node->neighbours[1] = nodes[i][j + 1];
+			}
+			if (i < nodes.size() - 1 && nodes[i + 1][j]->type != '#') // down
+			{
+				node->neighbours[2] = nodes[i + 1][j];
+			}
+			if (j > 0 && nodes[i][j - 1]->type != '#') // left
+			{
+				node->neighbours[3] = nodes[i][j - 1];
+			}
+		}
+	}
+}
 

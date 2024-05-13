@@ -11,5 +11,4 @@ endif()
 
 project ("QueueCompass")
 
-# Включите подпроекты.
 add_subdirectory ("QueueCompass")

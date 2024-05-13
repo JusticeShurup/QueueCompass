@@ -1,12 +1,12 @@
 ############
 #soooooooo##
-#oo###oooo##
+#oo###oo#o##
 #oooo#oo#oo#
 #oooo#ooo#o#
 #oooo#oo##o#
 #oo###oo#oo#
 #oooo#####o#
-#oooo#ooeoo#
-#oooo#ooooo#
-#oooo0ooooo#
+#oooo#ooe#o#
+#o####oo##o#
+#oooooooooo#
 ############
